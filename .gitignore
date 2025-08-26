@@ -1,0 +1,27 @@
+# .gitignore
+# --- Build & packaging artifacts ---
+build/
+dist/
+*.egg-info/
+
+# --- Cython generated files ---
+pcmf_p3ca/utils/admm_utils.c
+pcmf_p3ca/utils/admm_utils.*.so
+pcmf_p3ca/utils/admm_utils.*.pyd   # for Windows builds
+
+# --- Python cache ---
+pcmf_p3ca/utils/__pycache__/
+pcmf_p3ca/__pycache__/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- Jupyter notebooks checkpoints ---
+.ipynb_checkpoints/
+
+# --- Environment files ---
+.env/
+.venv/
+*.log
+.DS_Store

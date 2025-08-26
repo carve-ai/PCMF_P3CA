@@ -1,0 +1,17 @@
+# Include license, readme, and installation files
+include pcmf_p3ca/LICENSE
+include pcmf_p3ca/README.md
+include pcmf_p3ca/overview-github.png
+include pcmf_p3ca/setup.py
+include pcmf_p3ca/install.sh
+
+# Include example notebook
+include pcmf_p3ca/example_notebook.ipynb
+
+# Include all Python source files in pcmf_p3ca root
+recursive-include pcmf_p3ca *.py
+
+# Include Cython/C extension sources in admm_utils submodule
+recursive-include pcmf_p3ca/admm_utils *.pyx
+recursive-include pcmf_p3ca/admm_utils *.c
+recursive-include pcmf_p3ca/admm_utils *.py
