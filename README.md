@@ -1,18 +1,20 @@
 # PCMF, LL-PCMF, & P3CA: Simple and Scalable Algorithms for Cluster‑Aware Embedding
 
-**PCMF** (Pathwise Clustered Matrix Factorization), **LL‑PCMF** (Locally Linear PCMF), **P3CA** (Pathwise Clustered Canonical Correlation Analysis), and **Consensus PCMF** are modular algorithms that combine low‑rank embedding with a convex clustering penalty to produce **cluster‑aware** representations for single‑view and two‑view data.
+**PCMF** (Pathwise Clustered Matrix Factorization), **LL‑PCMF** (Locally Linear PCMF), **P3CA** (Pathwise Clustered Canonical Correlation Analysis), and **Consensus PCMF** are modular algorithms that combine low‑rank embedding with a convex clustering penalty to produce **cluster‑aware** low-rank representations for single‑view and two‑view data.
 
 These methods are introduced in:  
 **Amanda M. Buch, Conor Liston, Logan Grosenick.** *Simple and scalable algorithms for cluster‑aware precision medicine.* AISTATS 2024 (PMLR 238:136–144).  
 Paper: https://proceedings.mlr.press/v238/buch24a.html
 
+![Overview of PCMF method (Figure 2 in AISTATS 2024 paper).](overview-github.png)
+
 ---
 
 ## Highlights
-- **Pathwise solutions**: compute a full regularization path and select the best point.
-- **Single‑view & multi‑view**: PCMF/LL‑PCMF for single‑view; P3CA for paired views (CCA‑style).
-- **Consensus/batched mode** for larger datasets.
-- **Fast implementations** with optional Numba and Cython; uses CHOLMOD (via `scikit-sparse`) for speed.
+- **Pathwise solutions**: computes a full regularization path, yields interpretable hierarchically clustered embedding dendrograms, and selects the best penalty for cluster-aware low-rank representation of dataset/s.
+- **Single‑view & multi‑view**: PCMF/LL‑PCMF for single‑view ("cluster-aware PCA/LLE"); P3CA for paired views ("cluster-aware CCA").
+- **Consensus/batched mode** for larger datasets (PCMF method).
+- **Fast implementations** with optional Numba and Cython; uses CHOLMOD (via `scikit-sparse`) for speed, warm-started ADMM (alternating direction method of multipliers), and Algorithmic Regularization (see Weylandt et al., 2020).
 - **Consistent API** across models.
 
 ---
@@ -20,30 +22,27 @@ Paper: https://proceedings.mlr.press/v238/buch24a.html
 ## Installation
 
 ### Managed install (conda/mamba + MOSEK + optional Cython)
-Use the included helper to set up an environment and (optionally) build the Cython extension:
+Use the included installation helper script to set up an environment and (optionally) build the Cython extension:
 ```bash
 bash install.sh
 ```
 The script:
-- creates a conda/mamba env (default: `pcmf_env`, Python 3.8),
+- creates a conda/mamba env (default: `pcmf_p3ca_env`, Python 3.8),
 - installs the scientific stack + `cvxpy`, `numba`, `scikit-sparse`, etc.,
-- installs `mosek` (required: ),
-- checks for a MOSEK license at `~/.mosek/mosek.lic`,
-- installs this repo in editable mode,
-- optionally compiles `pcmf_p3ca.utils.admm_utils from pcmf_p3ca/utils/admm_utils.pyx` (falls back to Numba/Python if not built; Numba is typically faster than Cython for large # of variables).
+- installs `mosek`,
+- checks for a MOSEK license at `~/mosek/mosek.lic,
+    You must obtain a MOSEK license to use optimization features."
+      1. Register for a free academic MOSEK license at:"
+          https://www.mosek.com/license/request/?i=acp"
+      2. Place your license file at: $MOSEK_LIC"
+- installs this repository as a module in editable mode,
+- optionally compiles Cythonized proximal operator `pcmf_p3ca.utils.admm_utils from pcmf_p3ca/utils/admm_utils.pyx` (options to use Python (slow) or Numba version (faster than Cython for datasets with a large number of variables) if not built).
 
-    echo "        You must obtain a MOSEK license to use optimization features."
-    echo ""
-    echo "  1. Register for a free academic MOSEK license at:"
-    echo "     https://www.mosek.com/license/request/?i=acp"
-    echo ""
-    echo "  2. Place your license file at: $MOSEK_LIC"
-
-Restarting the script:
+Restarting the installation helper script:
 - If you need to restart the script, you can remove and recreate the conda/mamba environment by:
     rm -vr pcmf_p3ca.egg-info pcmf_p3ca/__pycache__
-    mamba env remove -n pcmf_p3ca_env -y # or conda
-    mamba env list # or conda; check that it is removed
+    mamba env remove -n pcmf_p3ca_env -y # or conda env remove -n pcmf_p3ca_env -y
+    mamba env list # or conda env list; to check that it is removed
     bash install.sh # re-run installer
 
 - You can remove any files created by the setup_admm_utils.py with:
@@ -161,13 +160,13 @@ All model classes share a consistent interface:
 
 - `fit(...)` → runs the pathwise solver; stores path variables in lists  
 - `select(labels_true=None, trim_init_lambdas=2)` → spectral clustering along the path; sets `best_lam`  
-- `return_fit(lam=None | "best")` → variables for one λ (or the entire path)  
-- `return_labels(lam=None | "best")` → labels at one λ (or all)  
-- `plot_path(plot_range=(0, -1))` → quick path visualization
+- `return_fit(lam=None | "best")` → returns variables for one λ (or the entire path)  
+- `return_labels(lam=None | "best")` → returns labels at one λ (or all)  
+- `plot_path(plot_range=(0, -1))` → quick path solution visualization of interpretable hierarchally clustered dendrogram
 
 Classes:
-- `PCMF`: pathwise matrix factorization with convex clustering penalty  
-- `LLPCMF`: locally linear variant (convex clustering for `u` + ADMM for `V`)  
+- `PCMF`: pathwise clustered matrix factorization with convex clustering penalty  
+- `LLPCMF`: locally linear variant of PCMF (used a Penalized Alternating Least Squares approach with convex clustering for `u` + ADMM for `V`)  
 - `P3CA`: pathwise clustered canonical correlation analysis  
 - `ConsensusPCMF`: batched/consensus variant of PCMF
 
@@ -190,7 +189,7 @@ Classes:
 
 ## Tips & Troubleshooting
 
-- **MOSEK**: MOSEK is required, put your license at `~/.mosek/mosek.lic`.  
+- **MOSEK**: MOSEK is required, put your license at `~/mosek/mosek.lic`.  
 - **CHOLMOD (`scikit-sparse`)**: provides big speed‑ups. 
 - **Cython extension**: if `admm_utils` fails to build, the code transparently falls back to Numba/Python implementations.
 
@@ -213,7 +212,9 @@ If you use this package, please cite:
   year = {2024},
   editor = {Dasgupta, Sanjoy and Mandt, Stephan and Li, Yingzhen},
   volume = {238},
-  series = {Proceedings of Machine Learning Research}
+  series = {Proceedings of Machine Learning Research},
+  publisher = {PMLR},
+  url = {https://proceedings.mlr.press/v238/buch24a.html}
 }
 ```
 
